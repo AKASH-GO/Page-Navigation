@@ -1,89 +1,103 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import "./App.css";
 
-const Pagination = () => {
-  const [data, setData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+const Pagination = ({ currentPage, itemsPerPage, totalItems, paginate }) => {
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const response = await axios.get(
-        "https://geektrust.s3-ap-southeast-1.amazonaws.com/adminui-problem/members.json"
-      );
-      setData(response.data);
-    } catch (error) {
-      alert("failed to fetch data");
-    }
+  const goToNextPage = () => {
+      if (currentPage < totalPages) {
+          paginate(currentPage + 1);
+      }
   };
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-
-  const nextPage = () => {
-    if (currentPage < Math.ceil(data.length / itemsPerPage)) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+  const goToPreviousPage = () => {
+      if (currentPage > 1) {
+          paginate(currentPage - 1);
+      }
   };
 
   return (
-    <div className="tableContainer">
-      <h1 className="tableTitle">Employee Data Table</h1>
-      <table className="dataTable">
-        <thead>
-          <tr className="tableHeader">
-            <th>ID</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentItems.map((item) => (
-            <tr key={item.id} className="tableRow">
-              <td>{item.id}</td>
-              <td>{item.name}</td>
-              <td>{item.email}</td>
-              <td>{item.role}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="paginationContainer">
-        <div className="paginationButtons">
-          <button
-            onClick={prevPage}
-            className="paginationButton"
-            style={{ opacity: currentPage > 1 ? 1 : 0.5 }}
-          >
-            Previous
-          </button>
-          <span className="paginationCurrent">{currentPage}</span>
-          <button
-            onClick={nextPage}
-            className="paginationButton"
-            style={{ opacity: currentPage < totalPages ? 1 : 0.5 }}
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
+      <nav>
+          <div className='pagination'>
+              <div className='page-item'>
+                  <button onClick={goToPreviousPage}  className='page-link'>
+                      Previous
+                  </button>
+              </div>
+              {/* Optional: Display Current Page (You can also show total pages if needed) */}
+              <div className='page-item'>
+                  <div className='page-link'>{currentPage}</div>
+              </div>
+              <div className='page-item'>
+                  <button onClick={goToNextPage}  className='page-link'>
+                      Next
+                  </button>
+              </div>
+          </div>
+      </nav>
   );
 };
 
-export default Pagination;
+
+const DataTable = ({ currentItems }) => {
+  return (
+      <table>
+          <thead>
+              <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                 
+              </tr>
+          </thead>
+          <tbody>
+              {currentItems.map(item => (
+                  <tr key={item.id}>
+                      <td>{item.id}</td>
+                      <td>{item.name}</td>
+                      <td>{item.email}</td>
+                      <td>{item.role}</td>
+                  </tr>
+              ))}
+          </tbody>
+      </table>
+  );
+};
+
+const App = () => {
+    const [items, setItems] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
+
+    useEffect(() => {
+        axios.get('https://geektrust.s3-ap-southeast-1.amazonaws.com/adminui-problem/members.json')
+            .then(response => {
+                setItems(response.data);
+            })
+            .catch(error => {
+                alert("Failed to fetch data")
+            });
+    }, []);
+
+    // Get current items
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = items.slice(indexOfFirstItem, indexOfLastItem);
+
+    // Change page
+    const paginate = pageNumber => setCurrentPage(pageNumber);
+
+    return (
+        <div>
+        <h1>Employee Data Table</h1>
+            <DataTable currentItems={currentItems} />
+            <Pagination currentPage={currentPage}
+                itemsPerPage={itemsPerPage} 
+                totalItems={items.length} 
+                paginate={paginate}  />
+        </div>
+    );
+};
+
+export default App;
